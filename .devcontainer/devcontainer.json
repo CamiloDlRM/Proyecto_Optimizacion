@@ -1,0 +1,20 @@
+{
+    "name": "Python Development",
+    "dockerComposeFile": "docker-compose.yml",  // Especifica el archivo docker-compose.yml
+    "service": "python_service",               // Define el servicio principal
+    "workspaceFolder": "/app",                 // Carpeta de trabajo dentro del contenedor
+    "shutdownAction": "stopCompose",           // Detener docker-compose al cerrar VS Code
+    "remoteUser": "root",                      // Usuario dentro del contenedor
+    "customizations": {
+      "vscode": {
+        "extensions": [                        // Extensiones de VS Code
+          "ms-python.python",
+          "ms-python.vscode-pylance"
+        ]
+      }
+    },
+    "mounts": [                                // Montajes de volúmenes
+      "source=${localWorkspaceFolder}/backend/app,target=/app/dev_back,type=bind,consistency=cached",
+      "source=${localWorkspaceFolder}/frontend,target=/app/dev_front,type=bind,consistency=cached"
+    ]
+  }

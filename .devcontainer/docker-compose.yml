@@ -1,0 +1,30 @@
+services:
+  database:
+    image: postgres:16
+    container_name: database_container
+    environment:  
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase_prueba
+    networks:
+      - develop
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  python_service:
+    build: 
+      context: backend\requirements.txt
+      dockerfile: .devcontainer\Dockerfile
+    container_name: app_container
+    networks:
+      - develop
+    depends_on:
+      - database
+
+networks:
+  develop:
+
+volumes:
+  pgdata:
