@@ -15,8 +15,8 @@ services:
 
   python_service:
     build: 
-      context: backend\requirements.txt
-      dockerfile: .devcontainer\Dockerfile
+      context: ..
+      dockerfile: ./.devcontainer/Dockerfile
     container_name: app_container
     networks:
       - develop

@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 
-COPY requirements.txt .
+COPY backend/requirements.txt .
 
 
 RUN python3 -m venv venv
