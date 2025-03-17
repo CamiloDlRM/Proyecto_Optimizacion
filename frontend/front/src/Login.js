@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-function Login() {
+function Login({ onLoginSuccess }) {
   const [isRegistering, setIsRegistering] = useState(false); // Alterna entre login y registro
   const [formData, setFormData] = useState({
     email: '',
@@ -23,6 +23,7 @@ function Login() {
       setIsRegistering(false); // Cambia al modo de login después de registrar
     } else {
       alert('Inicio de sesión exitoso');
+      onLoginSuccess(); // Llama a la función de callback para cambiar a la página principal
     }
   };
 
