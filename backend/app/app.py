@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import numpy as np
 import sympy as sp
+from dev_back.Activity_1 import *
 
 app = Flask(__name__)
 CORS(app)  
