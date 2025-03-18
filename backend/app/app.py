@@ -7,6 +7,7 @@ from dev_back.Activity_1 import *
 import io
 import base64
 from dev_back.Activity_2 import *
+from dev_back.Activity_4 import *
 
 app = Flask(__name__)
 CORS(app)  
@@ -58,9 +59,15 @@ class Activity3(db.Model):
 class Activity4(db.Model):
     __tablename__ = 'Activity_4'
     id_Activity = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    valor_1 = db.Column(db.Numeric, nullable=False)
-    valor_2 = db.Column(db.Numeric, nullable=False)
-    valor_3 = db.Column(db.Numeric, nullable=False)
+    function_str = db.Column(db.String(255), nullable=False)
+    method = db.Column(db.String(50), nullable=False)
+    initial_point = db.Column(db.Float, nullable=False)
+    tolerance = db.Column(db.Float, nullable=False)
+    learning_rate = db.Column(db.Float, nullable=True)
+    result_x = db.Column(db.Float, nullable=False)
+    result_f = db.Column(db.Float, nullable=False)
+    iterations = db.Column(db.Integer, nullable=True)
+    
 
 class RegistryActivities(db.Model):
     __tablename__ = 'Registry_Activities'
@@ -394,7 +401,7 @@ def save_Activity_1():
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/matrix/input', methods=['POST'])
+@app.route('Activity_3/save', methods=['POST'])
 def matrix_input_view():
     try:
         data = request.json
@@ -425,7 +432,7 @@ def matrix_input_view():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/matrix/execute', methods=['POST'])
+@app.route('Activity_3/evaluate', methods=['POST'])
 def execute_matrix_operation():
     try:
  
@@ -473,6 +480,101 @@ def execute_matrix_operation():
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('Activity_4/evaluate', methods=['POST'])
+def optimize():
+    data = request.get_json()
+    
+    try:
+        
+        func_str = data.get('function')
+        method = data.get('method')
+        x0 = float(data.get('initialPoint'))
+        tolerance = float(data.get('tolerance'))
+        learning_rate = float(data.get('learningRate', 0.01))
+        
+        # Validación básica
+        if not func_str:
+            return jsonify({"error": "La función es requerida"}), 400
+        
+        # Verificar que la función se puede evaluar
+        try:
+            eval(func_str, {"x": 0, "np": np})
+        except Exception as e:
+            return jsonify({"error": f"Función inválida: {str(e)}"}), 400
+        
+        # Crear la función a optimizar
+        f_user = f_factory(func_str)
+        
+        # Medir tiempo de ejecución
+        start_time = time.time()
+        history = None
+        
+        # Ejecutar el método seleccionado
+        if method == "gradient":
+            x_opt, f_opt, history = gradient_descent(x0, learning_rate, tolerance, f_user)
+            iterations = len(history) - 1
+        elif method == "newton":
+            x_opt, f_opt, history = newton_method(x0, tolerance, f_user)
+            iterations = len(history) - 1
+        elif method == "bfgs":
+            x_opt, f_opt, history = bfgs_method(x0, tolerance, f_user)
+            iterations = None
+        else:
+            return jsonify({"error": "Método no válido"}), 400
+        
+        execution_time = time.time() - start_time
+        
+        # Preparar resultado
+        result = {
+            "result_x": float(x_opt),
+            "result_f": float(f_opt),
+            "iterations": iterations,
+            "execution_time": execution_time
+        }
+        
+        return jsonify(result)
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('Activity_4/save', methods=['POST'])
+def save_result():
+    data = request.get_json()
+    
+    try:
+        
+        func_str = data.get('function')
+        method = data.get('method')
+        x0 = float(data.get('initialPoint'))
+        tolerance = float(data.get('tolerance'))
+        learning_rate = float(data.get('learningRate')) if data.get('learningRate') else None
+        result_x = float(data.get('result_x'))
+        result_f = float(data.get('result_f'))
+        iterations = data.get('iterations')
+        
+        
+        new_result = Activity4(
+            function_str=func_str,
+            method=method,
+            initial_point=x0,
+            tolerance=tolerance,
+            learning_rate=learning_rate,
+            result_x=result_x,
+            result_f=result_f,
+            iterations=iterations,
+        )
+        
+        # Guardar en la base de datos
+        db.session.add(new_result)
+        db.session.commit()
+        
+        return jsonify({"success": True, "id": new_result.id})
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
     
 
 if __name__ == '__main__':
