@@ -4,6 +4,9 @@ from flask_cors import CORS
 import numpy as np
 import sympy as sp
 from dev_back.Activity_1 import *
+import io
+import base64
+from dev_back.Activity_2 import *
 
 app = Flask(__name__)
 CORS(app)  
@@ -36,6 +39,37 @@ class Activity1(db.Model):
     resc3_coef_c = db.Column(db.Numeric)
     evaluation_point_x = db.Column(db.Numeric)
     evaluation_point_y = db.Column(db.Numeric)
+
+class Activity2(db.Model):
+    __tablename__ = 'Activity_2'
+    id_Activity = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    metodo = db.Column(db.String(10), nullable=False)  
+    filas = db.Column(db.Integer, nullable=False)
+    columnas = db.Column(db.Integer, nullable=False)
+    densidad = db.Column(db.Float, nullable=False)
+
+class Activity3(db.Model):
+    __tablename__ = 'Activity_3'
+    id_Activity = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    x = db.Column(db.Numeric, nullable=False)
+    x0 = db.Column(db.Numeric, nullable=False)
+    n = db.Column(db.Integer, nullable=False)
+
+class Activity4(db.Model):
+    __tablename__ = 'Activity_4'
+    id_Activity = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    valor_1 = db.Column(db.Numeric, nullable=False)
+    valor_2 = db.Column(db.Numeric, nullable=False)
+    valor_3 = db.Column(db.Numeric, nullable=False)
+
+class RegistryActivities(db.Model):
+    __tablename__ = 'Registry_Activities'
+    id_RA = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id_user = db.Column(db.Integer, db.ForeignKey('Usuario.id_user', ondelete='CASCADE'), nullable=False)
+    id_ACT1 = db.Column(db.Integer, db.ForeignKey('Activity_1.id_Activity', ondelete='CASCADE'), nullable=False)
+    id_ACT2 = db.Column(db.Integer, db.ForeignKey('Activity_2.id_Activity', ondelete='CASCADE'), nullable=False)
+    id_ACT3 = db.Column(db.Integer, db.ForeignKey('Activity_3.id_Activity', ondelete='CASCADE'), nullable=False)
+    id_ACT4 = db.Column(db.Integer, db.ForeignKey('Activity_4.id_Activity', ondelete='CASCADE'), nullable=False)
 
 @app.route('/register', methods=['POST'])
 def register_user():
@@ -360,9 +394,85 @@ def save_Activity_1():
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
-@app.route('/Activity_1', methods=['GET'])
-def get_Activity_1():
-    pass
+@app.route('/api/matrix/input', methods=['POST'])
+def matrix_input_view():
+    try:
+        data = request.json
+        
+        metodo = data.get('metodo', '').strip().lower()
+        n = int(data.get('filas', 0))
+        m = int(data.get('columnas', 0))
+        densidad = float(data.get('densidad', 0))
+        
+        # Create database entry
+        operation = Activity2(
+            metodo=metodo,
+            filas=n,
+            columnas=m,
+            densidad=densidad
+        )
+        db.session.add(operation)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Operación registrada correctamente'
+        })
+        
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/matrix/execute', methods=['POST'])
+def execute_matrix_operation():
+    try:
+ 
+        data = request.json
+        metodo = data.get('metodo', '').strip().lower()
+        n = int(data.get('filas', 0))
+        m = int(data.get('columnas', 0))
+        densidad = float(data.get('densidad', 0))
+        
+        # Validate inputs
+        if metodo not in ['coo', 'csr', 'csc']:
+            return jsonify({'error': 'Método no válido. Debe ser COO, CSR o CSC'}), 400
+        
+        if n <= 0 or m <= 0:
+            return jsonify({'error': 'Filas y columnas deben ser números positivos'}), 400
+        
+        if densidad <= 0 or densidad > 1:
+            return jsonify({'error': 'Densidad debe estar entre 0 y 1'}), 400
+        
+        # Generate matrices
+        matriz_a, matriz_b = valores(n, m, densidad)
+        
+        # Execute operations and measure times
+        results = tiempo_ejecution(matriz_a, matriz_b, metodo)
+        
+        # Format results for display
+        formatted_results = {
+            'metodo': metodo,
+            'filas': n,
+            'columnas': m,
+            'densidad': densidad,
+            'resultados': {
+                'Tiempo de ejecución del método propio': f"{results['tiempo_metodo_propio']:.10f} segundos",
+                f"Tiempo de ejecución del método python {metodo}": f"{results['tiempo_metodo_python']:.10f} segundos",
+                'Tiempo de ejecución de la operación del método propio': f"{results['tiempo_operacion_metodo_propio']:.10f} segundos",
+                f"Tiempo de ejecución de la operación del método python {metodo}": f"{results['tiempo_operacion_metodo_python']:.10f} segundos",
+                'Tiempo de ejecución de la operación entre densas': f"{results['tiempo_operacion_densas']:.10f} segundos"
+            }
+        }
+        
+        
+        return jsonify(formatted_results)
+        
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     
 
 if __name__ == '__main__':
