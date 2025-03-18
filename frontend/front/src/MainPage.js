@@ -29,7 +29,7 @@ function MainPage({ onLogout, onSelectProblem }) {
               <div className="d-flex justify-content-center">
                 <div className="border-bottom border-light opacity-50" style={{ width: '120px' }}></div>
               </div>
-              <p className="lead mt-3 text-light opacity-75">Laboratorio 1: Exploración de Optimización</p>
+              <p className="lead mt-3 text-light opacity-75">Laboratorio 1</p>
             </div>
           </div>
         </div>
@@ -143,7 +143,7 @@ function MainPage({ onLogout, onSelectProblem }) {
       {/* Footer moderno */}
       <footer className="mt-auto py-4" style={{ background: 'rgba(0, 15, 31, 0.7)' }}>
         <div className="container text-center">
-          <p className="mb-0 text-light opacity-75">© 2025 OPTINFINITE - Todos los derechos reservados</p>
+          <p className="mb-0 text-light opacity-75">© 2025 OPTINFINITE - Optimización</p>
           <button 
             className="btn btn-outline-light btn-sm mt-2"
             onClick={onLogout}

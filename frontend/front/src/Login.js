@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import axios from 'axios';
 
 function Login({ onLoginSuccess }) {
   const [isRegistering, setIsRegistering] = useState(false); // Alterna entre login y registro
@@ -17,13 +18,32 @@ function Login({ onLoginSuccess }) {
   };
 
   // Manejadores de botones
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (isRegistering) {
-      alert('Usuario registrado exitosamente');
-      setIsRegistering(false); // Cambia al modo de login después de registrar
+      try {
+        const response = await axios.post('http://localhost:5008/register', {
+          id_user: formData.identification,
+          username: formData.name,
+          password: formData.password,
+          email: formData.email,
+          credentials: 1 // Puedes ajustar esto según tus necesidades
+        });
+        alert('Usuario registrado exitosamente');
+        setIsRegistering(false); // Cambia al modo de login después de registrar
+      } catch (error) {
+        alert('Error: ' + (error.response ? error.response.data.error : error.message));
+      }
     } else {
-      alert('Inicio de sesión exitoso');
-      onLoginSuccess(); // Llama a la función de callback para cambiar a la página principal
+      try {
+        const response = await axios.post('http://localhost:5008/login', {
+          email: formData.email,
+          password: formData.password
+        });
+        alert('Inicio de sesión exitoso');
+        onLoginSuccess(response.data.user); // Llama a la función de callback para cambiar a la página principal
+      } catch (error) {
+        alert('Error: ' + (error.response ? error.response.data.error : error.message));
+      }
     }
   };
 
