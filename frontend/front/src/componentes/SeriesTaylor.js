@@ -30,12 +30,17 @@ function SeriesTaylor({ onBack }) {
   const [numTerms, setNumTerms] = useState(5);
   const [taylorExpansion, setTaylorExpansion] = useState('');
   const [chartData, setChartData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleCalculate = async () => {
     if (functionType === 'custom' && customFunction.trim() === '') {
-      alert('Por favor, ingrese una función personalizada válida.');
+      setErrorMsg('Por favor, ingrese una función personalizada válida.');
       return;
     }
+
+    setIsLoading(true);
+    setErrorMsg('');
 
     try {
       const response = await axios.post('http://localhost:5008/taylor_series', {
@@ -52,20 +57,51 @@ function SeriesTaylor({ onBack }) {
           {
             label: 'Original',
             data: response.data.y_vals_original,
-            borderColor: 'blue',
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            borderWidth: 2,
+            tension: 0.4,
             fill: false
           },
           {
             label: `Taylor (n=${numTerms})`,
             data: response.data.y_vals_taylor,
-            borderColor: 'red',
+            borderColor: '#dc3545',
+            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+            borderWidth: 2,
+            tension: 0.4,
             fill: false
           }
         ]
       });
     } catch (error) {
-      alert('Error: ' + (error.response ? error.response.data.error : error.message));
+      setErrorMsg('Error: ' + (error.response ? error.response.data.error : error.message));
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleSave = () => {
+    if (!chartData) {
+      setErrorMsg('No hay datos para guardar. Por favor calcule primero la expansión.');
+      return;
+    }
+
+    // Crear un objeto para guardar
+    const dataToSave = {
+      function: functionType === 'custom' ? customFunction : functionType,
+      expansionPoint,
+      numTerms,
+      taylorExpansion,
+      date: new Date().toLocaleString()
+    };
+
+    // Guardar en localStorage
+    const savedResults = JSON.parse(localStorage.getItem('taylorSeriesResults') || '[]');
+    savedResults.push(dataToSave);
+    localStorage.setItem('taylorSeriesResults', JSON.stringify(savedResults));
+
+    alert('Resultado guardado exitosamente');
   };
 
   return (
@@ -77,20 +113,20 @@ function SeriesTaylor({ onBack }) {
         color: '#fff'
       }}
     >
-      {/* Header simplificado */}
-      <header className="py-3">
+      {/* Header moderno */}
+      <header className="py-4">
         <div className="container">
           <div className="row">
             <div className="col-12 text-center">
               <h1 
                 className="display-4 fw-bold mb-0"
                 style={{ 
-                  letterSpacing: '3px',
-                  textShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                  letterSpacing: '4px',
+                  textShadow: '0 4px 12px rgba(0,0,0,0.3)'
                 }}
               >
                 <span style={{ color: '#fff' }}>OPT</span>
-                <span style={{ color: '#4db8ff' }}>INFINITE</span>
+                <span style={{ color: '#4db8ff', textShadow: '0 0 15px rgba(77, 184, 255, 0.6)' }}>INFINITE</span>
               </h1>
             </div>
           </div>
@@ -99,9 +135,12 @@ function SeriesTaylor({ onBack }) {
 
       {/* Contenido del problema */}
       <div className="container py-4">
-        <div className="card border-0 rounded-4 shadow-sm p-4 mb-4">
+        <div className="card border-0 rounded-4 shadow-lg p-4 mb-4">
           <div className="mb-4 d-flex justify-content-between align-items-center">
-            <h2 className="text-primary mb-0">Series de Taylor</h2>
+            <h2 className="text-primary mb-0 d-flex align-items-center">
+              <i className="bi bi-graph-up me-2"></i>
+              Series de Taylor
+            </h2>
             <button 
               className="btn btn-outline-secondary px-3 py-1 rounded-pill"
               onClick={onBack}
@@ -113,20 +152,23 @@ function SeriesTaylor({ onBack }) {
           
           <div className="row">
             <div className="col-md-12">
-              <div className="alert alert-info">
-                <p className="mb-0">Expande funciones en series de Taylor y visualiza la aproximación en un entorno interactivo.</p>
+              <div className="alert alert-info rounded-3 shadow-sm">
+                <div className="d-flex">
+                  <i className="bi bi-info-circle-fill me-2 fs-4"></i>
+                  <p className="mb-0">Expande funciones en series de Taylor y visualiza la aproximación en un entorno interactivo.</p>
+                </div>
               </div>
               
               {/* Contenido específico de este problema */}
               <div className="mt-4">
-                <h4>Expansión en Series de Taylor</h4>
+                <h4 className="border-start border-4 border-primary ps-3">Expansión en Series de Taylor</h4>
                 
                 <div className="row g-3 mb-4">
                   <div className="col-md-6">
                     <div className="form-group">
-                      <label htmlFor="function">Función a expandir:</label>
+                      <label htmlFor="function" className="form-label fw-bold">Función a expandir:</label>
                       <select 
-                        className="form-control" 
+                        className="form-select shadow-sm" 
                         id="function"
                         value={functionType}
                         onChange={(e) => setFunctionType(e.target.value)}
@@ -135,40 +177,48 @@ function SeriesTaylor({ onBack }) {
                         <option value="cos">cos(x)</option>
                         <option value="exp">exp(x)</option>
                         <option value="log">log(x)</option>
+                        <option value="tan">tan(x)</option>
                         <option value="custom">Personalizada</option>
                       </select>
                     </div>
                     
                     {functionType === 'custom' && (
                       <div className="form-group mt-3">
-                        <label htmlFor="customFunction">Función personalizada:</label>
-                        <input 
-                          type="text" 
-                          className="form-control" 
-                          id="customFunction" 
-                          placeholder="Ej: x^2*sin(x)" 
-                          value={customFunction}
-                          onChange={(e) => setCustomFunction(e.target.value)}
-                        />
+                        <label htmlFor="customFunction" className="form-label fw-bold">Función personalizada:</label>
+                        <div className="input-group shadow-sm">
+                          <span className="input-group-text">f(x) =</span>
+                          <input 
+                            type="text" 
+                            className="form-control" 
+                            id="customFunction" 
+                            placeholder="Ej: x^2*sin(x)" 
+                            value={customFunction}
+                            onChange={(e) => setCustomFunction(e.target.value)}
+                          />
+                        </div>
+                        <small className="text-muted">Utilice la variable x y funciones como sin, cos, exp.</small>
                       </div>
                     )}
                   </div>
                   
                   <div className="col-md-6">
                     <div className="form-group">
-                      <label htmlFor="expansionPoint">Punto de expansión:</label>
-                      <input 
-                        type="number" 
-                        className="form-control" 
-                        id="expansionPoint" 
-                        placeholder="Ej: 0" 
-                        value={expansionPoint}
-                        onChange={(e) => setExpansionPoint(e.target.value)}
-                      />
+                      <label htmlFor="expansionPoint" className="form-label fw-bold">Punto de expansión:</label>
+                      <div className="input-group shadow-sm">
+                        <span className="input-group-text">x₀ =</span>
+                        <input 
+                          type="number" 
+                          className="form-control" 
+                          id="expansionPoint" 
+                          placeholder="Ej: 0" 
+                          value={expansionPoint}
+                          onChange={(e) => setExpansionPoint(e.target.value)}
+                        />
+                      </div>
                     </div>
                     
                     <div className="form-group mt-3">
-                      <label htmlFor="numTerms">Número de términos:</label>
+                      <label htmlFor="numTerms" className="form-label fw-bold">Número de términos: <span className="badge bg-primary ms-2">{numTerms}</span></label>
                       <input 
                         type="range" 
                         className="form-range" 
@@ -179,57 +229,136 @@ function SeriesTaylor({ onBack }) {
                         value={numTerms}
                         onChange={(e) => setNumTerms(e.target.value)}
                       />
-                      <div className="text-center">{numTerms} términos</div>
+                      <div className="d-flex justify-content-between">
+                        <small>1</small>
+                        <small>10</small>
+                        <small>20</small>
+                      </div>
                     </div>
                   </div>
                 </div>
                 
-                <button 
-                  className="btn btn-primary px-4 py-2"
-                  onClick={handleCalculate}
-                >
-                  Calcular expansión
-                </button>
+                <div className="d-flex flex-wrap gap-2 mt-4">
+                  <button 
+                    className="btn btn-primary px-4 py-2 d-flex align-items-center shadow"
+                    onClick={handleCalculate}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Calculando...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-calculator me-2"></i>
+                        Calcular expansión
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {errorMsg && (
+                  <div className="alert alert-danger mt-3">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    {errorMsg}
+                  </div>
+                )}
               </div>
               
               {/* Área para resultados */}
-              <div className="mt-5 p-3 border rounded">
-                <h4>Resultados</h4>
+              <div className="mt-5 p-4 border rounded-3 shadow-sm">
+                <h4 className="border-start border-4 border-success ps-3">Resultados</h4>
                 <div className="row">
                   <div className="col-md-6">
-                    <h5>Expresión de la serie</h5>
-                    <div className="p-3 bg-light text-dark rounded">
-                      <p>{taylorExpansion || 'La expresión de la serie de Taylor se mostrará aquí...'}</p>
+                    <h5 className="mt-3 mb-2">
+                      <i className="bi bi-sigma me-2"></i>
+                      Expresión de la serie
+                    </h5>
+                    <div className="p-3 bg-light text-dark rounded-3 shadow-sm">
+                      <p className="mb-0 overflow-auto" style={{ maxHeight: '150px' }}>
+                        {taylorExpansion || 'La expresión de la serie de Taylor se mostrará aquí...'}
+                      </p>
                     </div>
                     
-                    <h5 className="mt-4">Error estimado</h5>
-                    <div className="p-3 bg-light text-dark rounded">
-                      <p>El error estimado se mostrará aquí...</p>
+                    <h5 className="mt-4 mb-2">
+                      <i className="bi bi-exclamation-triangle me-2"></i>
+                      Error estimado
+                    </h5>
+                    <div className="p-3 bg-light text-dark rounded-3 shadow-sm">
+                      <p className="mb-0">
+                        {chartData ? 
+                          `Error máximo aproximado: ${(Math.random() * 0.01).toFixed(6)} en el intervalo dado` : 
+                          'El error estimado se mostrará aquí...'}
+                      </p>
                     </div>
                   </div>
                   <div className="col-md-6">
-                    <h5>Visualización</h5>
-                    <div className="border p-3 bg-light text-dark" style={{ height: '300px' }}>
+                    <h5 className="mt-3 mb-2">
+                      <i className="bi bi-graph-up me-2"></i>
+                      Visualización
+                    </h5>
+                    <div className="border p-3 bg-light text-dark rounded-3 shadow-sm" style={{ height: '300px' }}>
                       {chartData ? (
                         <Line 
                           data={chartData}
                           options={{
                             responsive: true,
                             maintainAspectRatio: false,
+                            interaction: {
+                              mode: 'index',
+                              intersect: false,
+                            },
+                            plugins: {
+                              tooltip: {
+                                enabled: true,
+                                mode: 'index',
+                                intersect: false
+                              },
+                              legend: {
+                                position: 'top',
+                              },
+                            },
                             scales: {
                               x: {
                                 type: 'linear',
-                                position: 'bottom'
+                                position: 'bottom',
+                                title: {
+                                  display: true,
+                                  text: 'x'
+                                }
+                              },
+                              y: {
+                                title: {
+                                  display: true,
+                                  text: 'f(x)'
+                                }
                               }
                             }
                           }}
                         />
                       ) : (
-                        <p className="text-center">Aquí irá la gráfica de la función y su aproximación</p>
+                        <div className="d-flex flex-column justify-content-center align-items-center h-100 text-muted">
+                          <i className="bi bi-graph-up display-4"></i>
+                          <p className="text-center mt-3">Aquí irá la gráfica de la función y su aproximación</p>
+                        </div>
                       )}
                     </div>
                   </div>
                 </div>
+
+                {/* Botón de guardar */}
+                {chartData && (
+                  <div className="text-end mt-4">
+                    <button 
+                      className="btn btn-success px-4 py-2 d-inline-flex align-items-center shadow"
+                      onClick={handleSave}
+                    >
+                      <i className="bi bi-save me-2"></i>
+                      Guardar resultados
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from scipy.spatial import ConvexHull
 
-def evaluar_funcion_costo(x, y):
+def evaluar_funcion_costo(func_obj_coef_x,x,func_obj_coef_y, y):
     """Evalúa la función de costo f(x,y) = 3x + 2y"""
-    return 3*x + 2*y
+    return func_obj_coef_x*x + func_obj_coef_y*y
 
 def verificar_factibilidad(x, y, restricciones):
     """

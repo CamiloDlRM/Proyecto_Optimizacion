@@ -11,29 +11,51 @@ function MainPage({ onLogout, onSelectProblem }) {
         color: '#fff'
       }}
     >
-      {/* Header con diseño mejorado y título optimizado */}
-      <header className="py-5">
-        <div className="container">
-          <div className="row">
-            <div className="col-12 text-center mb-4">
-              <h1 
-                className="display-3 fw-bold mb-0"
-                style={{ 
-                  letterSpacing: '3px',
-                  textShadow: '0 2px 10px rgba(0,0,0,0.2)'
-                }}
-              >
-                <span style={{ color: '#fff' }}>OPT</span>
-                <span style={{ color: '#4db8ff' }}>INFINITE</span>
-              </h1>
-              <div className="d-flex justify-content-center">
-                <div className="border-bottom border-light opacity-50" style={{ width: '120px' }}></div>
-              </div>
-              <p className="lead mt-3 text-light opacity-75">Laboratorio 1</p>
-            </div>
-          </div>
+ {/* Header con diseño mejorado y efectos modernos */}
+<header className="py-5">
+  <div className="container">
+    <div className="row">
+      <div className="col-12 text-center mb-4">
+        <h1 
+          className="display-3 fw-bold mb-0"
+          style={{ 
+            letterSpacing: '4px',
+            textShadow: '0 4px 12px rgba(0,0,0,0.3)'
+          }}
+        >
+          <span style={{ color: '#fff' }}>OPT</span>
+          <span 
+            style={{ 
+              color: '#4db8ff', 
+              textShadow: '0 0 15px rgba(77, 184, 255, 0.6)'
+            }}
+          >INFINITE</span>
+        </h1>
+        <div className="d-flex justify-content-center mt-2">
+          <div 
+            className="border-bottom" 
+            style={{ 
+              width: '120px', 
+              borderColor: 'rgba(255,255,255,0.5)', 
+              borderWidth: '2px',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+            }}
+          ></div>
         </div>
-      </header>
+        <p 
+          className="lead mt-3" 
+          style={{ 
+            color: 'rgba(255,255,255,0.85)',
+            textShadow: '0 2px 6px rgba(0,0,0,0.2)',
+            fontWeight: '300'
+          }}
+        >
+          Laboratorio 1
+        </p>
+      </div>
+    </div>
+  </div>
+</header>
 
       {/* Contenido principal con diseño mejorado */}
       <div className="container py-4">

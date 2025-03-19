@@ -1,17 +1,15 @@
 import time
 import numpy as np
-import scipy.sparse as sp
+import scipy.sparse as sparse
 # Matrix operations functions
 def valores(n, m, densidad):
-    """Generate random matrices with chosen density"""
-    valores = np.arange(1000)
-    p = [densidad] + [(1-densidad) / (len(valores)-1)] * (len(valores)-1)
-    matriz_a = np.random.choice(valores, size=(n, m), p=p)
-    matriz_b = np.random.choice(valores, size=(n, m), p=p)
-    return matriz_a, matriz_b
+    valores = np.arange(-1000, 1000)
+    p = [(1-densidad) / (len(valores)-1)] * int((len(valores))/2) + [densidad] + [(1-densidad) / (len(valores)-1)] * int((len(valores)-1)/2)
+    matriz = np.random.choice(valores, size=(n, m), p=p)
+    return matriz
 
+# Convierte a matriz dispersa por método propio
 def matrices_esparse(matriz):
-    """Convert to sparse matrix using custom method"""
     filas = []
     columnas = []
     valores = []
@@ -20,51 +18,43 @@ def matrices_esparse(matriz):
             if matriz[i][j] != 0:
                 filas.append(i)
                 columnas.append(j)
-                valores.append(int(matriz[i][j]))
+                valores.append(matriz[i][j])
     return filas, columnas, valores
 
+# Convierte a matriz dispersa por método elegido por el usuario
 def convertir_sparse(matriz, metodo):
-    """Convert to sparse matrix using method chosen by user"""
+    metodo = metodo.lower()
     if metodo == "coo":
-        return sp.coo_matrix(matriz)
+        return sparse.coo_matrix(matriz)
     elif metodo == "csr":
-        return sp.csr_matrix(matriz)
+        return sparse.csr_matrix(matriz)
     elif metodo == "csc":
-        return sp.csc_matrix(matriz)
+        return sparse.csc_matrix(matriz)
     else:
-        raise ValueError("Método no válido")
+        raise ValueError("Método {metodo}' no válido")
 
-def operation_sparse(matriz_a, matriz_b, metodo):
-    """Execute operations between sparse matrices using chosen method"""
+# Ejecuta la operación suma para el exp entre densas
+def operation_densas_exp(matrizA, matrizB):
     start = time.time()
-    matriz_a_sparse = convertir_sparse(matriz_a, metodo)
-    matriz_b_sparse = convertir_sparse(matriz_b, metodo)
-    matriz_a_sparse + matriz_b_sparse  # Sum
-    matriz_a_sparse - matriz_b_sparse  # Subtraction
-    matriz_a_sparse.T  # Transpose
-    matriz_b_sparse.T
+    np.add(matrizA, matrizB)
     end = time.time()
-    return end - start
+    return end-start
 
-def operation_densas(matriz_a, matriz_b):
-    """Execute operations between dense matrices"""
+# Ejecuta la operación suma para el exp con dispersas coo
+def operatoin_sparse_exp(matrizA, matrizB):
     start = time.time()
-    np.transpose(matriz_a)
-    np.transpose(matriz_b)
-    np.add(matriz_a, matriz_b)
-    np.subtract(matriz_a, matriz_b)
+    matrizA = sparse.coo_matrix(matrizA)
+    matrizB = sparse.coo_matrix(matrizB)
+    matrizA + matrizB
     end = time.time()
-    return end - start
+    return end-start
 
-def operation_matriz(matriz_a, matriz_b):
-    """Execute operations between sparse matrices using custom method"""
+# Ejecuta la operación suma para el exp método propio coo
+def operation_matriz_exp(matrizA, matrizB):
     start = time.time()
-    filas1, columnas1, valores1 = matrices_esparse(matriz_a)
-    filas2, columnas2, valores2 = matrices_esparse(matriz_b)
+    filas1, columnas1, valores1 = matrices_esparse(matrizA)
+    filas2, columnas2, valores2 = matrices_esparse(matrizB)
     fila_sum, columna_sum, valores_sum = [], [], []
-    fila_rest, columna_rest, valores_rest = [], [], []
-
-    # Sum
     i, j = 0, 0
     while i < len(filas1) and j < len(filas2):
         if (filas1[i], columnas1[i]) == (filas2[j], columnas2[j]):
@@ -96,70 +86,43 @@ def operation_matriz(matriz_a, matriz_b):
         columna_sum.append(columnas2[j])
         j += 1
 
-    # Subtraction
-    i, j = 0, 0
-    while i < len(filas1) and j < len(filas2):
-        if (filas1[i], columnas1[i]) == (filas2[j], columnas2[j]):
-            valores_rest.append(valores1[i] - valores2[j])
-            fila_rest.append(filas1[i])
-            columna_rest.append(columnas1[i])
-            i += 1
-            j += 1
-        elif (filas1[i], columnas1[i]) < (filas2[j], columnas2[j]):
-            valores_rest.append(valores1[i])
-            fila_rest.append(filas1[i])
-            columna_rest.append(columnas1[i])
-            i += 1
-        else:
-            valores_rest.append(-valores2[j])
-            fila_rest.append(filas2[j])
-            columna_rest.append(columnas2[j])
-            j += 1
-
-    while i < len(filas1):
-        valores_rest.append(valores1[i])
-        fila_rest.append(filas1[i])
-        columna_rest.append(columnas1[i])
-        i += 1
-
-    while j < len(filas2):
-        valores_rest.append(-valores2[j])
-        fila_rest.append(filas2[j])
-        columna_rest.append(columnas2[j])
-        j += 1
-
-    # Transpose
-    filas1, columnas1 = columnas1, filas1
-    filas2, columnas2 = columnas2, filas2
     end = time.time()
-    return end - start
+    return end-start
 
-def tiempo_ejecution(matriz_a, matriz_b, metodo):
-    """Execute and measure execution times for each method"""
-    results = {}
+# Ejecuta los tiempos de ejecución de cada uno del experimento
+def tiempo_ejecution_exp(n, m):
+    matrizA = valores(int(n), int(m), float(0.5))
+    matrizB = valores(int(n), int(m), float(0.5))
     
-    # Custom method
+    # Operación método propio
+    tiempomat = operation_matriz_exp(matrizA, matrizB)
+
+    # Operación método seleccionado
+    tiemposparse = operatoin_sparse_exp(matrizA, matrizB)
+
+    # Operación entre densas
+    tiempodensas = operation_densas_exp(matrizA, matrizB)
+    
+    return tiempomat, tiemposparse, tiempodensas
+
+def tiempo_ejecution_user(n, m, metodo, operacion, densidad):
+    matrizA = valores(int(n), int(m), float(densidad))
+    matrizB = valores(int(n), int(m), float(densidad))
+    matrizC = valores(int(m), int(n), float(densidad))
+    
     start = time.time()
-    filas, columnas, valores = matrices_esparse(matriz_a)
+    matrizA_sparse = convertir_sparse(matrizA, metodo)
+    matrizB_sparse = convertir_sparse(matrizB, metodo)
+    matrizC_sparse = convertir_sparse(matrizC, metodo)
+    
+    if operacion == "multiplicación":
+        resultado = matrizA_sparse @ matrizC_sparse
+    elif operacion == "suma":
+        resultado = matrizA_sparse + matrizB_sparse
+    elif operacion == "resta":
+        resultado = matrizA_sparse - matrizB_sparse
+    elif operacion == "Transpuesta":
+        resultado = matrizA_sparse.T   
     end = time.time()
-    results['tiempo_metodo_propio'] = end - start
     
-    # Selected method
-    start = time.time()
-    matriz_esparse = convertir_sparse(matriz_a, metodo)
-    end = time.time()
-    results['tiempo_metodo_python'] = end - start
-    
-    # Operations using custom method
-    tiempo = operation_matriz(matriz_a, matriz_b)
-    results['tiempo_operacion_metodo_propio'] = tiempo
-    
-    # Operations using selected method
-    tiempo = operation_sparse(matriz_a, matriz_b, metodo)
-    results['tiempo_operacion_metodo_python'] = tiempo
-    
-    # Operations between dense matrices
-    tiempo = operation_densas(matriz_a, matriz_b)
-    results['tiempo_operacion_densas'] = tiempo
-    
-    return results
+    return end-start

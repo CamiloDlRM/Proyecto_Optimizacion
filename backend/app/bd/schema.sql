@@ -1,6 +1,14 @@
+-- Eliminar tablas si existen para evitar errores
+DROP TABLE IF EXISTS Registry_Activities;
+DROP TABLE IF EXISTS Activity_4;
+DROP TABLE IF EXISTS Activity_3;
+DROP TABLE IF EXISTS Activity_2;
+DROP TABLE IF EXISTS Activity_1;
+DROP TABLE IF EXISTS Usuario;
+
 -- Tabla Usuario
 CREATE TABLE Usuario (
-    id_user INTEGER PRIMARY KEY,
+    id_user SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     password TEXT NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
@@ -9,7 +17,7 @@ CREATE TABLE Usuario (
 
 -- Tabla Activity_1
 CREATE TABLE Activity_1 (
-    id_Activity INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_Activity SERIAL PRIMARY KEY,
     func_obj_coef_x NUMERIC NOT NULL,
     func_obj_coef_y NUMERIC NOT NULL,
     resc1_coef_a NUMERIC,
@@ -27,7 +35,7 @@ CREATE TABLE Activity_1 (
 
 -- Tabla Activity_2
 CREATE TABLE Activity_2 (
-    id_Activity INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_Activity SERIAL PRIMARY KEY,
     metodo VARCHAR(10) NOT NULL,
     filas INTEGER NOT NULL,
     columnas INTEGER NOT NULL,
@@ -36,7 +44,7 @@ CREATE TABLE Activity_2 (
 
 -- Tabla Activity_3
 CREATE TABLE Activity_3 (
-    id_Activity INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_Activity SERIAL PRIMARY KEY,
     x NUMERIC NOT NULL,
     x0 NUMERIC NOT NULL,
     n INTEGER NOT NULL
@@ -44,7 +52,7 @@ CREATE TABLE Activity_3 (
 
 -- Tabla Activity_4
 CREATE TABLE Activity_4 (
-    id_Activity INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_Activity SERIAL PRIMARY KEY,
     function_str VARCHAR(255) NOT NULL,
     method VARCHAR(50) NOT NULL,
     initial_point REAL NOT NULL,
@@ -57,7 +65,7 @@ CREATE TABLE Activity_4 (
 
 -- Tabla Registry_Activities
 CREATE TABLE Registry_Activities (
-    id_RA INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_RA SERIAL PRIMARY KEY,
     id_user INTEGER NOT NULL,
     id_ACT1 INTEGER NOT NULL,
     id_ACT2 INTEGER NOT NULL,

@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import numpy as np
 import sympy as sp
+import scipy.sparse as sparse
 from dev_back.Activity_1 import *
 import io
 import base64
@@ -24,9 +25,9 @@ class Usuario(db.Model):
     credentials = db.Column(db.Integer, nullable=False)
 
 class Activity1(db.Model):
-    __tablename__ = 'Activity_1'
+    __tablename__ = 'activity_1'
     
-    id_Activity = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id_activity = db.Column(db.Integer, primary_key=True, autoincrement=True)
     func_obj_coef_x = db.Column(db.Numeric, nullable=False)
     func_obj_coef_y = db.Column(db.Numeric, nullable=False)
     resc1_coef_a = db.Column(db.Numeric)
@@ -137,7 +138,8 @@ def taylor_series():
         x0 = float(data.get('x0'))
         n = int(data.get('n'))
 
-        x = sp.symbols('x')
+        import sympy
+        x = sympy.symbols('x')
         functions = {
             'sin': sp.sin(x),
             'cos': sp.cos(x),
@@ -262,7 +264,7 @@ def evaluate_Activity_1():
         is_feasible = verificar_factibilidad(evaluation_point_x, evaluation_point_y, restricciones)
         
         # Evaluar la función objetivo usando los coeficientes del usuario
-        objective_value = func_obj_coef_x * evaluation_point_x + func_obj_coef_y * evaluation_point_y
+        objective_value = evaluar_funcion_costo(func_obj_coef_x, evaluation_point_x,func_obj_coef_y, evaluation_point_y)
         
         
         # Crear figura para el gráfico
@@ -401,7 +403,7 @@ def save_Activity_1():
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
-@app.route('Activity_3/save', methods=['POST'])
+@app.route('/Activity_2/save', methods=['POST'])
 def matrix_input_view():
     try:
         data = request.json
@@ -432,57 +434,50 @@ def matrix_input_view():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('Activity_3/evaluate', methods=['POST'])
-def execute_matrix_operation():
-    try:
- 
-        data = request.json
-        metodo = data.get('metodo', '').strip().lower()
-        n = int(data.get('filas', 0))
-        m = int(data.get('columnas', 0))
-        densidad = float(data.get('densidad', 0))
+@app.route('/Activity_2/evaluate', methods=['POST'])
+def evaluate():
+    data = request.json
+    
+    if 'experiment_type' not in data:
+        return jsonify({'error': 'Tipo de experimento no especificado'}), 400
+    
+    if data['experiment_type'] == 'exp':
+        # Para el experimento predefinido
+        if 'n' not in data or 'm' not in data:
+            return jsonify({'error': 'Faltan parámetros n o m'}), 400
+            
+        n = data['n']
+        m = data['m']
         
-        # Validate inputs
-        if metodo not in ['coo', 'csr', 'csc']:
-            return jsonify({'error': 'Método no válido. Debe ser COO, CSR o CSC'}), 400
+        tiempomat, tiemposparse, tiempodensas = tiempo_ejecution_exp(n, m)
         
-        if n <= 0 or m <= 0:
-            return jsonify({'error': 'Filas y columnas deben ser números positivos'}), 400
+        return jsonify({
+            'tiempomat': tiempomat,
+            'tiemposparse': tiemposparse,
+            'tiempodensas': tiempodensas
+        })
+    
+    elif data['experiment_type'] == 'user':
+        # Para el experimento personalizado
+        if 'n' not in data or 'm' not in data or 'metodo' not in data or 'operacion' not in data or 'densidad' not in data:
+            return jsonify({'error': 'Faltan parámetros'}), 400
+            
+        n = data['n']
+        m = data['m']
+        metodo = data['metodo']
+        operacion = data['operacion']
+        densidad = data['densidad']
         
-        if densidad <= 0 or densidad > 1:
-            return jsonify({'error': 'Densidad debe estar entre 0 y 1'}), 400
+        tiempo = tiempo_ejecution_user(n, m, metodo, operacion, densidad)
         
-        # Generate matrices
-        matriz_a, matriz_b = valores(n, m, densidad)
-        
-        # Execute operations and measure times
-        results = tiempo_ejecution(matriz_a, matriz_b, metodo)
-        
-        # Format results for display
-        formatted_results = {
-            'metodo': metodo,
-            'filas': n,
-            'columnas': m,
-            'densidad': densidad,
-            'resultados': {
-                'Tiempo de ejecución del método propio': f"{results['tiempo_metodo_propio']:.10f} segundos",
-                f"Tiempo de ejecución del método python {metodo}": f"{results['tiempo_metodo_python']:.10f} segundos",
-                'Tiempo de ejecución de la operación del método propio': f"{results['tiempo_operacion_metodo_propio']:.10f} segundos",
-                f"Tiempo de ejecución de la operación del método python {metodo}": f"{results['tiempo_operacion_metodo_python']:.10f} segundos",
-                'Tiempo de ejecución de la operación entre densas': f"{results['tiempo_operacion_densas']:.10f} segundos"
-            }
-        }
-        
-        
-        return jsonify(formatted_results)
-        
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'tiempo': tiempo
+        })
+    
+    else:
+        return jsonify({'error': 'Tipo de experimento no válido'}), 400
 
-
-@app.route('Activity_4/evaluate', methods=['POST'])
+@app.route('/Activity_4/evaluate', methods=['POST'])
 def optimize():
     data = request.get_json()
     
@@ -512,7 +507,7 @@ def optimize():
         history = None
         
         # Ejecutar el método seleccionado
-        if method == "gradient":
+        if method == "gradiente":
             x_opt, f_opt, history = gradient_descent(x0, learning_rate, tolerance, f_user)
             iterations = len(history) - 1
         elif method == "newton":
@@ -539,7 +534,7 @@ def optimize():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('Activity_4/save', methods=['POST'])
+@app.route('/Activity_4/save', methods=['POST'])
 def save_result():
     data = request.get_json()
     
