@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-// Eliminamos las importaciones de Chart.js y react-chartjs-2, ya que la gráfica vendrá en base64
 function AlgoritmosOptimizacion({ onBack }) {
   const [funcionObjetivo, setFuncionObjetivo] = useState('');
   const [metodo, setMetodo] = useState('');
@@ -166,7 +165,7 @@ function AlgoritmosOptimizacion({ onBack }) {
                     </div>
                     <small className="form-text text-muted mt-2">
                       <i className="bi bi-info-circle me-1"></i>
-                      
+                      Para funciones multivariables, separa los valores con comas (ej: 1,2)
                     </small>
                   </div>
                 </div>
@@ -282,13 +281,17 @@ function AlgoritmosOptimizacion({ onBack }) {
                                   <tr>
                                     <th className="bg-light">x*</th>
                                     <td className="text-muted">
-                                      {resultados ? resultados.result_x : 'Pendiente...'}
+                                      {resultados 
+                                        ? Array.isArray(resultados.result_x) 
+                                          ? resultados.result_x.map((val, i) => `x${i+1}: ${val.toFixed(4)}`).join(', ')
+                                          : resultados.result_x.toFixed(4)
+                                        : 'Pendiente...'}
                                     </td>
                                   </tr>
                                   <tr>
                                     <th className="bg-light">f(x*)</th>
                                     <td className="text-muted">
-                                      {resultados ? resultados.result_f : 'Pendiente...'}
+                                      {resultados ? resultados.result_f.toFixed(6) : 'Pendiente...'}
                                     </td>
                                   </tr>
                                 </tbody>

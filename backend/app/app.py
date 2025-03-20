@@ -482,10 +482,9 @@ def optimize():
     data = request.get_json()
     
     try:
-        
         func_str = data.get('function')
         method = data.get('method')
-        x0 = float(data.get('initialPoint'))
+        x0_str = data.get('initialPoint')
         tolerance = float(data.get('tolerance'))
         learning_rate = float(data.get('learningRate', 0.01))
         
@@ -493,9 +492,26 @@ def optimize():
         if not func_str:
             return jsonify({"error": "La función es requerida"}), 400
         
+        # Convertir punto inicial a float o lista de floats
+        try:
+            # Check if it contains a comma (multiple variables)
+            if ',' in x0_str:
+                x0 = [float(x.strip()) for x in x0_str.split(',')]
+            else:
+                x0 = float(x0_str)
+        except Exception as e:
+            return jsonify({"error": f"Punto inicial inválido: {str(e)}"}), 400
+        
         # Verificar que la función se puede evaluar
         try:
-            eval(func_str, {"x": 0, "np": np})
+            if isinstance(x0, list) and len(x0) > 1:
+                # Multiple variables
+                eval_vars = {"x": x0[0], "y": x0[1] if len(x0) > 1 else 0, "z": x0[2] if len(x0) > 2 else 0, "np": np}
+            else:
+                # Single variable
+                eval_vars = {"x": float(x0) if not isinstance(x0, list) else x0[0], "np": np}
+            
+            eval(func_str, eval_vars)
         except Exception as e:
             return jsonify({"error": f"Función inválida: {str(e)}"}), 400
         
@@ -515,24 +531,132 @@ def optimize():
             iterations = len(history) - 1
         elif method == "bfgs":
             x_opt, f_opt, history = bfgs_method(x0, tolerance, f_user)
-            iterations = None
+            iterations = len(history) - 1 if history else None
         else:
             return jsonify({"error": "Método no válido"}), 400
         
         execution_time = time.time() - start_time
         
+        # Generar gráfica
+        plot_image = generate_function_plot(func_str, x_opt, f_opt, history)
+        
         # Preparar resultado
         result = {
-            "result_x": float(x_opt),
+            "result_x": float(x_opt) if not isinstance(x_opt, list) else [float(x) for x in x_opt],
             "result_f": float(f_opt),
             "iterations": iterations,
-            "execution_time": execution_time
+            "execution_time": execution_time,
+            "plot_image": plot_image
         }
         
         return jsonify(result)
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+def generate_function_plot(func_str, x_opt, f_opt, history=None):
+    """
+    Generate a plot showing the function and the optimal point.
+    Returns the plot as a base64-encoded string.
+    """
+    plt.figure(figsize=(10, 6))
+    
+    # Determinar si es una función de una o varias variables
+    is_multivariate = 'y' in func_str or 'z' in func_str
+    
+    if not is_multivariate:
+        # Para funciones de una variable, mostramos la función y el punto óptimo
+        x_range = np.linspace(x_opt - 5, x_opt + 5, 1000)
+        f_values = [eval(func_str, {"x": x, "np": np}) for x in x_range]
+        
+        plt.plot(x_range, f_values, 'b-', label=f"f(x) = {func_str}")
+        plt.scatter([x_opt], [f_opt], color='red', s=100, label=f"Óptimo: ({x_opt:.4f}, {f_opt:.4f})")
+        
+        # Si hay historial, mostrar la convergencia
+        if history:
+            # Modificación aquí para manejar diferentes formatos de historia
+            x_history = []
+            f_history = []
+            for h in history:
+                if isinstance(h, tuple) and len(h) == 2:
+                    # Si h es una tupla (x, f)
+                    x_history.append(h[0])
+                    f_history.append(h[1])
+                elif isinstance(h, list) and len(h) == 2:
+                    # Si h es una lista [x, f]
+                    x_history.append(h[0])
+                    f_history.append(h[1])
+                elif isinstance(h, dict) and 'x' in h and 'f' in h:
+                    # Si h es un diccionario {'x': x, 'f': f}
+                    x_history.append(h['x'])
+                    f_history.append(h['f'])
+            
+            plt.plot(x_history, f_history, 'g--', marker='o', markersize=4, alpha=0.6, label="Convergencia")
+    
+    else:
+        # Para funciones multivariables, mostramos un contour plot
+        # Asumimos que estamos trabajando con 2 variables para simplificar
+        x_range = np.linspace(x_opt[0] - 2, x_opt[0] + 2, 100)
+        y_range = np.linspace(x_opt[1] - 2, x_opt[1] + 2, 100)
+        X, Y = np.meshgrid(x_range, y_range)
+        
+        Z = np.zeros_like(X)
+        for i in range(X.shape[0]):
+            for j in range(X.shape[1]):
+                Z[i, j] = eval(func_str, {"x": X[i, j], "y": Y[i, j], "np": np})
+        
+        plt.contourf(X, Y, Z, 20, cmap='viridis', alpha=0.8)
+        plt.colorbar(label="f(x,y)")
+        plt.contour(X, Y, Z, 20, colors='k', linewidths=0.5, alpha=0.3)
+        
+        plt.scatter([x_opt[0]], [x_opt[1]], color='red', s=100, 
+                    label=f"Óptimo: ({x_opt[0]:.4f}, {x_opt[1]:.4f}), f={f_opt:.4f}")
+        
+        # Si hay historial, mostrar la trayectoria
+        if history:
+            x_history = []
+            y_history = []
+            
+            for h in history:
+                # Manejar diferentes formatos de historia
+                if isinstance(h, tuple) and len(h) >= 1:
+                    if isinstance(h[0], (list, np.ndarray)) and len(h[0]) >= 2:
+                        # Si h es como ([x, y], f)
+                        x_history.append(h[0][0])
+                        y_history.append(h[0][1])
+                    elif len(h) >= 2:
+                        # Si h es como (x, y, f)
+                        x_history.append(h[0])
+                        y_history.append(h[1])
+                elif isinstance(h, list):
+                    if len(h) >= 2:
+                        # Si h es [x, y, f]
+                        x_history.append(h[0])
+                        y_history.append(h[1])
+                elif isinstance(h, dict) and 'x' in h:
+                    # Si h es un diccionario {'x': [x, y], 'f': f}
+                    if isinstance(h['x'], (list, np.ndarray)) and len(h['x']) >= 2:
+                        x_history.append(h['x'][0])
+                        y_history.append(h['x'][1])
+            
+            if x_history and y_history:
+                plt.plot(x_history, y_history, 'r--', marker='o', markersize=4, alpha=0.6, label="Convergencia")
+    
+    plt.grid(True, alpha=0.3)
+    plt.title(f"Optimización de la función {func_str}", fontsize=12)
+    plt.xlabel("x" if not is_multivariate else "x1")
+    plt.ylabel("f(x)" if not is_multivariate else "x2")
+    plt.legend()
+    plt.tight_layout()
+    
+    # Convertir el gráfico a base64
+    buffer = io.BytesIO()
+    plt.savefig(buffer, format='png', dpi=150)
+    buffer.seek(0)
+    plot_data = base64.b64encode(buffer.getvalue()).decode('utf-8')
+    plt.close()
+    
+    return plot_data
 
 @app.route('/Activity_4/save', methods=['POST'])
 def save_result():

@@ -157,27 +157,41 @@ function AlgoritmosOptimizacion({ onBack }) {
                 <h4 className="fw-bold mb-3">Parámetros de entrada</h4>
 
                 <div className="row g-3 mb-4">
-                  {Array.from({ length: 13 }).map((_, index) => (
-                    <div className="col-md-3" key={index}>
-                      <div className="form-group">
-                        <label className="fw-medium mb-1">Parámetro {index + 1}:</label>
-                        <input
-                          type="number"
-                          className="form-control form-control-lg border-0 shadow-sm"
-                          style={{
-                            borderRadius: '10px',
-                            backgroundColor: '#f8f9fa',
-                            transition: 'all 0.3s ease',
-                          }}
-                          value={inputValues[index]}
-                          onChange={(e) => handleInputChange(index, e.target.value)}
-                          required
-                          placeholder="Ingrese un valor"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+  {[
+    "func_obj_coef_x",
+    "func_obj_coef_y",
+    "resc1_coef_a",
+    "resc1_coef_b",
+    "resc1_coef_c",
+    "resc2_coef_a",
+    "resc2_coef_b",
+    "resc2_coef_c",
+    "resc3_coef_a",
+    "resc3_coef_b",
+    "resc3_coef_c",
+    "evaluation_point_x",
+    "evaluation_point_y",
+  ].map((label, index) => (
+    <div className="col-md-3" key={index}>
+      <div className="form-group">
+        <label className="fw-medium mb-1">{label}:</label>
+        <input
+          type="number"
+          className="form-control form-control-lg border-0 shadow-sm"
+          style={{
+            borderRadius: "10px",
+            backgroundColor: "#f8f9fa",
+            transition: "all 0.3s ease",
+          }}
+          value={inputValues[index]}
+          onChange={(e) => handleInputChange(index, e.target.value)}
+          required
+          placeholder="Ingrese un valor"
+        />
+      </div>
+    </div>
+  ))}
+</div>
 
                 <button
                   className="btn px-4 py-2 shadow"
