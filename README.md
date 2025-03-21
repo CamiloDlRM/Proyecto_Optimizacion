@@ -1,7 +1,7 @@
 # 📄 Link del documento de instrucciones para ejecutar nuestro proyecto
 
 <div align="center" style="margin-top: 20px; margin-bottom: 30px;">
-  <a href="TU_ENLACE_AQUÍ" target="_blank">
+  <a href="https://docs.google.com/document/d/1lAmVLvLJleIbEy9LFKL5H8vxHZnRRzJvnKmE1SlEN9Q/edit?pli=1&tab=t.0" target="_blank">
     <img src="https://img.shields.io/badge/Ver_Documentación-2ECC71?style=for-the-badge&logo=gitbook&logoColor=white" alt="Documentación">
   </a>
 </div>
@@ -13,13 +13,13 @@
   </p>
   
   <div align="center">
-    <a href="TU_ENLACE_AQUÍ" target="_blank" style="text-decoration: none; background-color: #3498db; color: white; padding: 12px 24px; border-radius: 8px; font-weight: 500; transition: all 0.3s ease;">
+    <a href="https://docs.google.com/document/d/1lAmVLvLJleIbEy9LFKL5H8vxHZnRRzJvnKmE1SlEN9Q/edit?pli=1&tab=t.0" target="_blank" style="text-decoration: none; background-color: #3498db; color: white; padding: 12px 24px; border-radius: 8px; font-weight: 500; transition: all 0.3s ease;">
       📥 Abrir Documentación
     </a>
   </div>
 
   <p style="margin-top: 1.5rem; color: #95a5a6; font-size: 0.9rem; text-align: center;">
-    ¿Necesitas ayuda? Contacta a nuestro equipo en: soporte@ejemplo.com
+    ¿Necesitas ayuda? Contacta a nuestro equipo en: aarizaf@uninorte.edu.co
   </p>
 </div>
 
